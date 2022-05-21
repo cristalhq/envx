@@ -10,7 +10,7 @@ func TestEnvSet(t *testing.T) {
 	var d time.Duration
 
 	fset := NewEnvSet("ENVX")
-	fset.Duration(&d, "timeout", 5*time.Second, "just a timeout")
+	fset.Duration(&d, "TIMEOUT", 5*time.Second, "just a timeout")
 	// fset.IntSlice(&ids, "ids", "", wantIDs, "just a timeout")
 	// fset.Float64Set(&offsets, "offsets", "", wantOffsets, "just a timeout")
 

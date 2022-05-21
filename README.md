@@ -28,13 +28,20 @@ go get github.com/cristalhq/evnx
 ## Example
 
 ```go
-eset := evnx.NewEnvSet("testing")
-d := fset.Duration("timeout", "t", 10*time.Second, "just a timeout")
+envs := []string{"ENVX_TIMEOUT=20s"} // or os.Environ()
 
-err := fset.Parse([]string{"-t", "20s"})
+eset := envx.NewEnvSet("ENVX")
+var d time.Duration
+eset.Duration(&d, "TIMEOUT", 10*time.Second, "just a timeout")
+
+err := eset.Parse(envs)
 if err != nil {
 	panic(err)
 }
+
+fmt.Println(d)
+
+// Output: 20s
 ```
 
 Also see examples: [examples_test.go](https://github.com/cristalhq/evnx/blob/main/example_test.go).

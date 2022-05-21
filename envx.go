@@ -1,9 +1,7 @@
 package envx
 
 import (
-	"errors"
 	"fmt"
-	"reflect"
 	"strings"
 	"time"
 )
@@ -59,9 +57,9 @@ func (f *EnvSet) IsParsed() bool {
 
 func (f *EnvSet) getName(s string) string {
 	if f.prefix == "" {
-		return strings.ToUpper(s)
+		return s
 	}
-	return f.prefix + "_" + strings.ToUpper(s)
+	return f.prefix + "_" + s
 }
 
 // // VisitAll visits the flags in lexicographical order, calling fn for each.
@@ -210,7 +208,7 @@ func (f *EnvSet) Uint64(p *uint64, name string, value uint64, usage string) {
 
 // StringVar defines a string flag with specified name, default value, and usage string.
 // The argument p points to a string variable in which to store the value of the flag.
-func (f *EnvSet) String(p *string, name string, value string, usage string) {
+func (f *EnvSet) String(p *string, name, value, usage string) {
 	f.Var(newStringValue(value, p), name, usage)
 }
 
@@ -240,13 +238,10 @@ func (f *EnvSet) Func(name, usage string, fn func(string) error) {
 // caller could create a flag that turns a comma-separated string into a slice
 // of strings by giving the slice the methods of Value; in particular, Set would
 // decompose the comma-separated string into the slice.
-func (f *EnvSet) Var(value Value, name string, usage string) {
-	// Flag must not begin "-" or contain "=".
-	// if strings.HasPrefix(name, "-") {
-	// 	panic(f.sprintf("flag %q begins with -", name))
-	// } else if strings.Contains(name, "=") {
-	// 	panic(f.sprintf("flag %q contains =", name))
-	// }
+func (f *EnvSet) Var(value Value, name, usage string) {
+	if name != strings.ToUpper(name) {
+		panic(fmt.Sprintf("envx: env name must be uppercased: %s", name))
+	}
 
 	flag := &Flag{
 		Name:     f.getName(name),
@@ -254,36 +249,7 @@ func (f *EnvSet) Var(value Value, name string, usage string) {
 		Value:    value,
 		DefValue: value.String(),
 	}
-	// _, alreadythere := f.formal[name]
-	// if alreadythere {
-	// 	var msg string
-	// 	// if f.name == "" {
-	// 	msg = f.sprintf("flag redefined: %s", name)
-	// 	// } else {
-	// 	// 	msg = f.sprintf("%s flag redefined: %s", f.name, name)
-	// 	// }
-	// 	panic(msg) // Happens only if flags are declared with identical names
-	// }
-	// if f.formal == nil {
-	// 	f.formal = make(map[string]*Flag)
-	// }
-	// f.formal[name] = flag
 	f.envs[flag.Name] = flag.Value
-}
-
-// sprintf formats the message, prints it to output, and returns it.
-func (f *EnvSet) sprintf(format string, a ...interface{}) string {
-	msg := fmt.Sprintf(format, a...)
-	// fmt.Fprintln(f.Output(), msg)
-	return msg
-}
-
-// failf prints to standard error a formatted error and usage message and
-// returns the error.
-func (f *EnvSet) failf(format string, a ...interface{}) error {
-	msg := f.sprintf(format, a...)
-	// f.usage()
-	return errors.New(msg)
 }
 
 // usage calls the Usage method for the flag set if one is specified,
@@ -382,19 +348,3 @@ func (f *EnvSet) failf(format string, a ...interface{}) error {
 // 	f.name = name
 // 	f.errorHandling = errorHandling
 // }
-
-// isZeroValue determines whether the string represents the zero
-// value for a flag.
-func isZeroValue(flag *Flag, value string) bool {
-	// Build a zero value of the flag's Value type, and see if the
-	// result of calling its String method equals the value passed in.
-	// This works unless the Value type is itself an interface type.
-	typ := reflect.TypeOf(flag.Value)
-	var z reflect.Value
-	if typ.Kind() == reflect.Ptr {
-		z = reflect.New(typ.Elem())
-	} else {
-		z = reflect.Zero(typ)
-	}
-	return value == z.Interface().(Value).String()
-}
